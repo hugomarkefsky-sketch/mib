@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MAN IN BLUE – Geheime Akte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050b18; --panel:#0a1630; --line:#1d3a6e; --blue:#2f7bff; --blue2:#7fb0ff;
+    --text:#d8e4ff; --dim:#6f86b5; --red:#ff3b4a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:"Share Tech Mono",ui-monospace,Menlo,monospace;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overflow-x:hidden; -webkit-tap-highlight-color:transparent;
+  }
+  body::before{ /* scanlines */
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:5;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);
+  }
+  body::after{ /* vignette + grid */
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.7) 100%),
+      linear-gradient(var(--line) 1px,transparent 1px) 0 0/32px 32px,
+      linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/32px 32px;
+    opacity:.35;
+  }
+  main{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;max-width:520px;margin:0 auto;padding:28px 22px 32px}
+  header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:28px}
+  .logo{font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:30px;letter-spacing:.12em;color:var(--blue)}
+  .logo small{display:block;font-size:11px;letter-spacing:.35em;color:var(--dim);font-weight:500;margin-top:-4px}
+  .status{font-size:11px;color:var(--dim);text-align:right;line-height:1.5}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--blue);margin-right:6px;animation:blink 1.2s infinite}
+  @keyframes blink{50%{opacity:.2}}
+
+  .screen{display:none;flex:1;flex-direction:column}
+  .screen.on{display:flex;animation:in .4s ease}
+  @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* boot */
+  #log{font-size:14px;line-height:1.9;color:var(--blue2);min-height:220px}
+  #log .ok{color:#5be3a0}
+  #log .warn{color:var(--red)}
+  .bar{height:6px;background:var(--panel);border:1px solid var(--line);margin-top:24px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--blue2));transition:width .25s}
+  .pct{font-size:12px;color:var(--dim);margin-top:8px;text-align:right}
+  .cursor::after{content:"█";animation:blink 1s infinite;margin-left:2px}
+
+  /* denied */
+  .stamp{
+    font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:800;font-size:min(54px,10.5vw);line-height:.95;letter-spacing:.04em;max-width:92%;
+    color:var(--red);border:4px solid var(--red);padding:10px 14px;text-align:center;
+    transform:rotate(-6deg);margin:18px auto 34px;width:fit-content;
+    animation:stamp .35s cubic-bezier(.2,1.6,.4,1);
+    text-shadow:0 0 18px rgba(255,59,74,.35);
+  }
+  @keyframes stamp{from{transform:rotate(-6deg) scale(2.2);opacity:0}to{transform:rotate(-6deg) scale(1);opacity:1}}
+  .file{background:var(--panel);border:1px solid var(--line);padding:18px;font-size:14px;line-height:1.8}
+  .file .row{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:2px 0}
+  .file .row:last-child{border:0}
+  .file .k{color:var(--dim)}
+  .redact{background:var(--text);color:var(--text);padding:0 4px;user-select:none}
+  p.msg{margin:22px 0 0;font-size:15px;line-height:1.6;color:var(--text)}
+  .btn{
+    margin-top:auto;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;letter-spacing:.18em;
+    background:transparent;color:var(--blue2);border:2px solid var(--blue);padding:16px;width:100%;cursor:pointer;
+    text-transform:uppercase;transition:background .2s,color .2s;
+  }
+  .btn:active,.btn:hover{background:var(--blue);color:#fff}
+  .spacer{height:28px}
+
+  /* look */
+  .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .look h2{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:34px;letter-spacing:.08em;line-height:1.1}
+  .look p{color:var(--dim);margin-top:12px;font-size:14px}
+  .lens{
+    width:170px;height:170px;border-radius:50%;margin:34px 0;position:relative;
+    background:radial-gradient(circle,#cfe0ff 0 8%,#2f7bff 20%,#0a1630 60%,#050b18 70%);
+    border:6px solid #1d3a6e;box-shadow:0 0 50px rgba(47,123,255,.45),inset 0 0 30px #000;
+    animation:pulse 1s infinite;
+  }
+  @keyframes pulse{50%{box-shadow:0 0 80px rgba(47,123,255,.8),inset 0 0 30px #000}}
+  .count{font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:80px;color:var(--blue)}
+
+  #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:10}
+  #flash.go{animation:flash 1.6s ease-out}
+  @keyframes flash{0%{opacity:0}6%{opacity:1}40%{opacity:1}100%{opacity:0}}
+
+  /* forgot */
+  .forgot h2{font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:44px;letter-spacing:.04em;color:var(--blue2);line-height:1}
+  .forgot .sub{font-size:16px;line-height:1.7;margin-top:22px}
+  .forgot .tiny{font-size:12px;color:var(--dim);margin-top:30px;letter-spacing:.08em}
+  .sig{font-family:"Barlow Condensed",sans-serif;font-weight:700;letter-spacing:.3em;color:var(--blue);margin-top:40px;font-size:15px}
+  .again{margin-top:22px;background:none;border:0;color:var(--dim);font-family:inherit;font-size:12px;text-decoration:underline;cursor:pointer}
+  footer{font-size:10px;color:var(--dim);text-align:center;margin-top:24px;letter-spacing:.2em;opacity:.7}
+</style>
+</head>
+<body>
+<div id="flash"></div>
+<main>
+  <header>
+    <div class="logo">MIB<small>MAN IN BLUE</small></div>
+    <div class="status"><span class="dot"></span>SICHERE VERBINDUNG<br><span id="clock">--:--:--</span></div>
+  </header>
+
+  <!-- 1: Boot -->
+  <section class="screen on" id="s-boot">
+    <div id="log"></div>
+    <div class="bar"><i id="barfill"></i></div>
+    <div class="pct" id="pct">0 %</div>
+  </section>
+
+  <!-- 2: Zugriff verweigert -->
+  <section class="screen" id="s-denied">
+    <div class="stamp">ZUGRIFF<br>VERWEIGERT</div>
+    <div class="file">
+      <div class="row"><span class="k">AKTE</span><span>#0042-H</span></div>
+      <div class="row"><span class="k">ZUSTÄNDIG</span><span>AGENT H</span></div>
+      <div class="row"><span class="k">EINSATZORT</span><span>HALLOWEEN-PARTY</span></div>
+      <div class="row"><span class="k">ALIENS VOR ORT</span><span><span class="redact">████</span></span></div>
+      <div class="row"><span class="k">IHRE FREIGABE</span><span style="color:var(--red)">KEINE</span></div>
+    </div>
+    <p class="msg">Sie haben eine Karte gescannt, die nicht existiert. Dieser Vorfall wurde Agent H gemeldet.</p>
+    <div class="spacer"></div>
+    <button class="btn" id="appeal">Einspruch einlegen</button>
+  </section>
+
+  <!-- 3: In das Licht schauen -->
+  <section class="screen look" id="s-look">
+    <div class="center">
+      <h2>BITTE SCHAUEN SIE<br>HIER HINEIN</h2>
+      <p>Halten Sie das Handy vor Ihr Gesicht.</p>
+      <div class="lens"></div>
+      <div class="count" id="count">3</div>
+    </div>
+  </section>
+
+  <!-- 4: Vergessen -->
+  <section class="screen forgot" id="s-forgot">
+    <div class="center">
+      <h2>SIE WURDEN<br>GEBLITZT.</h2>
+      <p class="sub">Sie haben diese Karte nie gescannt.<br>Sie haben Agent H nie gesehen.<br>Genießen Sie die Party.</p>
+      <p class="tiny">DIESE SEITE EXISTIERT NICHT.</p>
+      <div class="sig">— AGENT H</div>
+      <button class="again" id="again">Moment … was ist passiert?</button>
+    </div>
+  </section>
+
+  <footer>MAN IN BLUE · ABTEILUNG ALIEN-KONTROLLE · SEKTOR 7</footer>
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const show = id => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+    $(id).classList.add('on');
+  };
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  // Uhr
+  const tick = () => { $('clock').textContent = new Date().toLocaleTimeString('de-DE'); };
+  tick(); setInterval(tick, 1000);
+
+  const lines = [
+    ['> Verbindung zum MIB-Hauptquartier …', ''],
+    ['> Verschlüsselung aktiv', 'ok'],
+    ['> Gerät erkannt', 'ok'],
+    ['> Scanne Gesicht des Benutzers …', ''],
+    ['> Abgleich mit Agenten-Datenbank …', ''],
+    ['> KEIN TREFFER', 'warn'],
+  ];
+
+  async function boot(){
+    const log = $('log'); log.innerHTML = '';
+    $('barfill').style.width = '0'; $('pct').textContent = '0 %';
+    for (let i = 0; i < lines.length; i++){
+      const [txt, cls] = lines[i];
+      const el = document.createElement('div');
+      if (cls) el.className = cls;
+      el.classList.add('cursor');
+      log.appendChild(el);
+      for (const ch of txt){ el.textContent += ch; await wait(22); }
+      el.classList.remove('cursor');
+      const p = Math.round((i + 1) / lines.length * 100);
+      $('barfill').style.width = p + '%'; $('pct').textContent = p + ' %';
+      await wait(cls === 'warn' ? 900 : 380);
+    }
+    show('s-denied');
+    try { navigator.vibrate && navigator.vibrate([80, 60, 80]); } catch(e){}
+  }
+
+  $('appeal').addEventListener('click', async () => {
+    show('s-look');
+    for (let n = 3; n >= 1; n--){ $('count').textContent = n; await wait(1000); }
+    $('count').textContent = '';
+    const f = $('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+    await wait(500);
+    show('s-forgot');
+  });
+
+  $('again').addEventListener('click', () => { show('s-boot'); boot(); });
+
+  boot();
+</script>
+</body>
+</html>
